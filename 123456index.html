@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>在宅理由生成器</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont;
+      background: #f6f7fb;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .box {
+      background: white;
+      padding: 24px;
+      width: 320px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+    .reason {
+      min-height: 80px;
+      margin-bottom: 16px;
+      font-size: 16px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="reason" id="reason">点下面按钮生成在宅理由</div>
+    <button onclick="draw()">随机生成</button>
+    <button onclick="copy()">一键复制</button>
+  </div>
+
+<script>
+  const data = {
+    "体調": {
+      "保守": [
+        "本日、体調が優れないため、在宅勤務に切り替えます。",
+        "体調管理の観点から、本日は在宅勤務といたします。",
+        "軽度の不調があるため、本日は在宅勤務にします。",
+        "体調様子見のため、本日は在宅勤務に切り替えます。",
+        "コンディション調整のため、本日は在宅勤務とさせていただきます。"
+      ],
+      "一般": [
+        "昨夜から微熱があり、念のため本日は在宅勤務にします。",
+        "喉の痛みがあるため、本日は在宅勤務に切り替えます。",
+        "頭痛があるため、本日は在宅勤務にします。",
+        "胃腸の調子が悪いため、本日は在宅勤務に切り替えます。",
+        "睡眠不足で体調が良くないため、本日は在宅勤務にします。"
+      ]
+    },
+    "私用": {
+      "保守": [
+        "私用対応のため、本日は在宅勤務とさせていただきます。",
+        "家庭の事情により、本日は在宅勤務に切り替えます。",
+        "所用のため、本日は在宅勤務といたします。",
+        "私用の都合により、本日は在宅勤務にします。",
+        "外出予定があり、移動時間を考慮して本日は在宅勤務とします。"
+      ],
+      "一般": [
+        "役所手続きがあるため、本日は在宅勤務にします。",
+        "通院予定があるため、本日は在宅勤務に切り替えます。",
+        "宅配の受け取り対応があるため、本日は在宅勤務にします。",
+        "家の点検対応があるため、本日は在宅勤務に切り替えます。",
+        "家族対応が必要なため、本日は在宅勤務にします。"
+      ]
+    },
+    "業務": {
+      "保守": [
+        "業務効率を考慮し、本日は在宅勤務といたします。",
+        "集中作業のため、本日は在宅勤務に切り替えます。",
+        "本日の業務内容を踏まえ、在宅勤務にします。",
+        "作業環境の都合により、本日は在宅勤務とさせていただきます。",
+        "業務影響を最小化するため、本日は在宅勤務に切り替えます。"
+      ],
+      "一般": [
+        "通勤経路で遅延が発生しているため、本日は在宅勤務に切り替えます。",
+        "天候不良の影響を考慮し、本日は在宅勤務にします。",
+        "機器対応が必要なため、本日は在宅勤務に切り替えます。",
+        "外部対応が続くため、本日は在宅勤務にします。",
+        "オンライン会議が中心のため、本日は在宅勤務に切り替えます。"
+      ]
+    }
+  };
+
+  let lastKey = "";
+
+  function getSelectedCategory() {
+    const el = document.getElementById("category");
+    return el ? el.value : "体調";
+  }
+
+  function getSelectedFormality() {
+    const el = document.getElementById("formality");
+    return el ? el.value : "保守";
+  }
+
+  function ensureControls() {
+    const box = document.querySelector(".box");
+    if (!box) return;
+
+    if (!document.getElementById("category")) {
+      const controls = document.createElement("div");
+      controls.style.display = "grid";
+      controls.style.gap = "8px";
+      controls.style.marginBottom = "12px";
+
+      const cat = document.createElement("select");
+      cat.id = "category";
+      cat.style.padding = "10px";
+      cat.innerHTML = `
+        <option value="体調">体調</option>
+        <option value="私用">私用</option>
+        <option value="業務">業務</option>
+      `;
+
+      const formality = document.createElement("select");
+      formality.id = "formality";
+      formality.style.padding = "10px";
+      formality.innerHTML = `
+        <option value="保守">更保守</option>
+        <option value="一般">一般</option>
+      `;
+
+      controls.appendChild(cat);
+      controls.appendChild(formality);
+
+      const reasonEl = document.getElementById("reason");
+      box.insertBefore(controls, reasonEl);
+    }
+  }
+
+  function draw() {
+    ensureControls();
+
+    const category = getSelectedCategory();
+    const formality = getSelectedFormality();
+
+    const pool = (data[category] && data[category][formality]) ? data[category][formality] : [];
+    if (pool.length === 0) {
+      document.getElementById("reason").innerText = "理由データがありません。";
+      return;
+    }
+
+    let idx = Math.floor(Math.random() * pool.length);
+    let key = category + "|" + formality + "|" + idx;
+
+    if (pool.length > 1) {
+      while (key === lastKey) {
+        idx = Math.floor(Math.random() * pool.length);
+        key = category + "|" + formality + "|" + idx;
+      }
+    }
+
+    lastKey = key;
+    document.getElementById("reason").innerText = pool[idx];
+  }
+
+  function copy() {
+    const text = document.getElementById("reason").innerText;
+    navigator.clipboard.writeText(text);
+    alert("コピーしました");
+  }
+
+  // 初回にセレクトを表示
+  ensureControls();
+</script>
+
+</body>
+</html>
